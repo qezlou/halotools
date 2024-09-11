@@ -3,6 +3,8 @@ Module containing the HOD-style composite model
 published in Zheng et al. (2007), arXiv:0703457.
 """
 
+import numpy as np
+import h5py
 
 from ... import model_defaults
 from ...occupation_models import hadzhiyska23_components
@@ -13,10 +15,30 @@ from ....custom_exceptions import HalotoolsError
 
 __all__ = ['hadzhiyska23_model_dictionary']
 
+class EnvProp(object):
+    def __init__(self, prop_key, prop_file, gal_type):
+        self.gal_type = gal_type
+        self.prop_file = prop_file
+        self.prop_key = prop_key
+        self._mock_generation_calling_sequence = ['assign_env_prop']
+        print(f'prop_key: {prop_key}')
+        self._galprop_dtypes_to_allocate = np.dtype([(prop_key, 'f4')])
+    
+    def assign_env_prop(self, **kwargs):
+        table = kwargs['table']
+        round_x = np.floor(table['halo_x']).astype(int)
+        round_y = np.floor(table['halo_y']).astype(int)
+        round_z = np.floor(table['halo_z']).astype(int)
+        with h5py.File(self.prop_file, 'r') as f:
+            table[self.prop_key] = f[self.prop_key][:][round_x,
+                                                       round_y,
+                                                       round_z]
+
 
 def hadzhiyska23_model_dictionary(
         threshold=model_defaults.default_luminosity_threshold,
-        redshift=sim_defaults.default_redshift, modulate_with_cenocc=False, **kwargs):
+        redshift=sim_defaults.default_redshift, modulate_with_cenocc=False, 
+        **kwargs):
     r""" Dictionary for an HOD-style based on Zheng et al. (2007), arXiv:0703457.
 
     See :ref:`hadzhiyska23_composite_model` for a tutorial on this model.
@@ -86,6 +108,13 @@ def hadzhiyska23_model_dictionary(
     directly. See :ref:`hadzhiyska23_using_cenocc_model_tutorial` for explicit instructions.
 
     """
+    ####################################
+    # Load the environmental properties of interest form an external
+    # hdf5 file and assign them to the mock
+    prop_key = kwargs.pop('prop_key')
+    prop_file = kwargs.pop('prop_file')
+    cen_env_prop = EnvProp(prop_key=prop_key, prop_file=prop_file, gal_type='centrals')
+    sat_env_prop = EnvProp(prop_key=prop_key, prop_file=prop_file, gal_type='satellites')
 
     ####################################
     # Build the `occupation` feature
@@ -112,7 +141,15 @@ def hadzhiyska23_model_dictionary(
     # Build the profile model
     satellites_profile = NFWPhaseSpace(redshift=redshift, **kwargs)
 
-    return ({'centrals_occupation': centrals_occupation,
-        'centrals_profile': centrals_profile,
-        'satellites_occupation': satellites_occupation,
-        'satellites_profile': satellites_profile})
+    return (({'centrals_env_prop': cen_env_prop,
+             'centrals_occupation': centrals_occupation,
+             'centrals_profile': centrals_profile,
+             'satellites_env_prop': sat_env_prop,
+             'satellites_occupation': satellites_occupation,
+             'satellites_profile': satellites_profile}),(
+             {'model_feature_calling_sequence':('centrals_env_prop', 
+                                               'centrals_occupation', 
+                                               'centrals_profile', 
+                                               'satellites_env_prop',
+                                               'satellites_occupation', 
+                                               'satellites_profile')}))

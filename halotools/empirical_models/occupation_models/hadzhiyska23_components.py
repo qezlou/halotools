@@ -20,7 +20,6 @@ class Hadzhiyska23Cens(OccupationComponent):
     def __init__(self,
                  threshold = model_defaults.default_luminosity_threshold,
                  prim_haloprop_key = model_defaults.prim_haloprop_key,
-                 env_keys = ['Shear'],
                  cen_no_assembias_model = None,
                  **kwargs):
         """
@@ -67,9 +66,6 @@ class Hadzhiyska23Cens(OccupationComponent):
             self.cen_no_assembias_model = Zheng07Cens(threshold=threshold,
                                                       prim_haloprop_key=prim_haloprop_key,
                                                       **kwargs)
-        self.env_keys = env_keys
-        if len(self.env_keys) == 1:
-            self.param_dict['b_cen'] = 0
 
     def mean_occupation(self, **kwargs):
         """
@@ -95,8 +91,11 @@ class Hadzhiyska23Cens(OccupationComponent):
         if 'table' in kwargs:
             prim_haloprop = kwargs['table'][self.prim_haloprop_key]
             env_term = np.zeros((0, prim_haloprop.size))
-            for ek, pk in zip(self.env_keys, self.param_dict.keys()):
-                env_term += self.param_dict[pk]*kwargs['table'][ek]
+            print(f'tabl.keys(): {kwargs["table"].keys()}')
+            for i, env_key in enumerate(self.param_dict['env-props']):
+                env_term += self.param_dict['env-scales'][i]*kwargs['table'][env_key]
+        else:
+            print(f'No Table was passed!')      
         # Get the mass-dependant mean occupation of choice (e.g. Zheng07Model or HmqModel)
         # And introduce the assembly bias in the mean occupation as prescribed in Eq 13 
         # of Hadzhiyska et al 2020
@@ -109,7 +108,8 @@ class Hadzhiyska23Cens(OccupationComponent):
         """
         Set the initial values of ``self.param_dict`` from Table 1 of Alam et al 2020.
         """
-        self.param_dict = {"a_cen": 1, "b_cen": 1}
+        self.param_dict = {"env-props":["Shear-s1.0"], 
+                           "env-scales":[1]}
 
 class Hadzhiyska23Sats(OccupationComponent):
     """
@@ -121,7 +121,7 @@ class Hadzhiyska23Sats(OccupationComponent):
                  threshold = model_defaults.default_luminosity_threshold,
                  prim_haloprop_key = model_defaults.prim_haloprop_key,
                  sat_no_assembias_model = None,
-                 env_keys = ['Shear'],
+                 env_keys = ['Shear-s1.0'],
                  **kwargs):
         r"""
         Parameters
@@ -194,8 +194,8 @@ class Hadzhiyska23Sats(OccupationComponent):
         if 'table' in kwargs:
             prim_haloprop = kwargs['table'][self.prim_haloprop_key]
             env_term = np.zeros((0, prim_haloprop.size))
-            for ek, pk in zip(self.env_keys, self.param_dict.keys()):
-                env_term += self.param_dict[pk]*kwargs['table'][ek]
+            for i, env_key in enumerate(self.param_dict['env-props']):
+                env_term += self.param_dict['env-scales'][i]*kwargs['table'][env_key]
         # Get the mass-dependant mean occupation of choice (e.g. Zheng07Model or HmqModel)
         # And introduce the assembly bias in the mean occupation as prescribed in Eq 13 
         # of Hadzhiyska et al 2020
@@ -209,4 +209,5 @@ class Hadzhiyska23Sats(OccupationComponent):
         """
         Set the initial values of ``self.param_dict`` from Table 1 of Alam et al 2020.
         """
-        self.param_dict = {"a_cen": 1, "b_cen": 1}
+        self.param_dict = {"env-props":["Shear-s1.0"], 
+                           "env-scales":[1]}

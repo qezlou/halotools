@@ -262,7 +262,7 @@ class PrebuiltHodModelFactory(HodModelFactory):
             dictionary_retriever = hod_models.zu_mandelbaum16_model_dictionary
         elif model_nickname == 'alam20':
             dictionary_retriever = hod_models.alam20_model_dictionary
-        elif model_nickname == 'hadzhiyska20':
+        elif model_nickname == 'hadzhiyska23':
             dictionary_retriever = hod_models.hadzhiyska23_model_dictionary
         else:
             msg = ("\nThe ``%s`` model_nickname is not recognized by Halotools\n")
